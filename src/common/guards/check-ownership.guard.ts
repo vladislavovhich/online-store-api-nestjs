@@ -18,9 +18,14 @@ export class OwnershipGuard implements CanActivate {
         const usr: UserPayload = request.user;
         const resourceId = request.params.id;
         const resourceType = this.reflector.get<string>('resourceType', context.getHandler());
+        const ownerKey = this.reflector.get<string>('ownerKey', context.getHandler());
 
         if (!resourceType) {
             throw new UnauthorizedException('Resource type is not specified');
+        }
+
+        if (!ownerKey) {
+            throw new UnauthorizedException('Owner key is not specified');
         }
 
         const resource = await this.prisma[resourceType].findUnique({
@@ -31,7 +36,7 @@ export class OwnershipGuard implements CanActivate {
 
         if (user.role == Roles.ADMIN) {
             return true
-        } else if (!resource || resource.userId !== usr.userId) {
+        } else if (!resource || resource[ownerKey] !== usr.userId) {
             throw new ForbiddenException('Access denied');
         }
 

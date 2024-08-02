@@ -1,3 +1,8 @@
-import { SetMetadata } from '@nestjs/common';
+import { SetMetadata, applyDecorators } from '@nestjs/common';
 
-export const CheckOwnership = (resourceType: string) => SetMetadata('resourceType', resourceType);
+export const CheckOwnership = (resourceType: string, ownerKey = "userId{") => {
+    return applyDecorators(
+        SetMetadata('resourceType', resourceType),
+        SetMetadata('ownerKey', ownerKey)
+    );
+}

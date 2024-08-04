@@ -2,14 +2,16 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateProductDto, ProductPropertyDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { PropertyService } from 'src/property/property.service';
 import { CategoryService } from 'src/category/category.service';
+import { Review } from '@prisma/client';
+import { ReviewService } from 'src/review/review.service';
 
 @Injectable()
 export class ProductService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly categoryService: CategoryService
+    private readonly categoryService: CategoryService,
+    private readonly reviewService: ReviewService
   ) {}
 
   async checkProperties(categoryId: number, properties: ProductPropertyDto[], allowedEmpty: boolean = false) {
@@ -94,21 +96,31 @@ export class ProductService {
     })
   }
 
+  calculateAverageRating(reviews: Review[]) {
+    const rating = reviews.reduce((val, prev) => prev.rating + val, 0) / reviews.length
+
+    return +rating.toFixed(2)
+  }
+
   async findAll() {
-    return await this.prisma.product.findMany({
+    const products = await this.prisma.product.findMany({
       include: {
         seller: true,
-        category: true
+        category: true,
+        reviews: true
       }
     })
+
+    return products.map(product => ({...product, averageRating: this.calculateAverageRating(product.reviews)}))
   }
 
   async findOne(id: number) {
-    return await this.prisma.product.findFirstOrThrow({
+    const product = await this.prisma.product.findFirstOrThrow({
       where: {id},
       include: {
         category: true,
         seller: true,
+        reviews: true,
         properties: {
           include: {
             property: true
@@ -116,6 +128,8 @@ export class ProductService {
         }
       }
     })
+
+    return {...product, averageRating: this.calculateAverageRating(product.reviews)}
   }
 
   async update(id: number, updateProductDto: UpdateProductDto) {

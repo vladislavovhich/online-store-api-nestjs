@@ -30,12 +30,12 @@ export class ReviewController {
     return this.reviewService.findAll(+productId);
   }
 
-  @Get('products/:productId/reviews/:id')
+  @Get('reviews/:id')
   findOne(@Param('id') id: string, @Param('productId') productId: string) {
     return this.reviewService.findOne(+id, +productId);
   }
 
-  @Patch('products/:productId/reviews/:id')
+  @Patch('reviews/:id')
   @Roles(UserRoles.ADMIN, UserRoles.SELLER)   
   @UseGuards(RolesGuard)
   @CheckOwnership('review')
@@ -45,7 +45,7 @@ export class ReviewController {
     return this.reviewService.update(+id, updateReviewDto);
   }
 
-  @Delete('products/:productId/reviews/:id')
+  @Delete('reviews/:id')
   @Roles(UserRoles.ADMIN, UserRoles.SELLER)   
   @UseGuards(RolesGuard)
   @CheckOwnership('review')

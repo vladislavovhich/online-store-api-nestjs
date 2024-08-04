@@ -20,7 +20,7 @@ export class AuthService {
        if (isExist) {
         throw new BadRequestException("Email is already taken!")
        }
-
+       
        const password = await bcrypt.hash(createUserDto.password, 10)
        const newUser = await this.userService.create({...createUserDto, password})
        const tokens = this.createTokens(newUser.id)

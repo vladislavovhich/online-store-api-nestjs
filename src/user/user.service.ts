@@ -2,16 +2,35 @@ import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class UserService {
   constructor(
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly cloudinary: CloudinaryService
   ) {}
 
   async create(createUserDto: CreateUserDto) {
+    console.log(createUserDto)
+    const imageUploaded = await this.cloudinary.uploadImage(createUserDto.file)
+
     return await this.prisma.user.create({
-      data: createUserDto
+      data: {
+        email: createUserDto.email, 
+        password: createUserDto.password,
+        role: createUserDto.role,
+        name: createUserDto.name,
+        birthDate: createUserDto.birthDate,
+        images: {
+          create: {
+            url: imageUploaded.url
+          }
+        },
+      },
+      include: {
+        images: true
+      }
     })
   }
 

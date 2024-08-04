@@ -7,6 +7,7 @@ import { UserModule } from 'src/user/user.module';
 @Module({
   controllers: [ReviewController],
   providers: [ReviewService],
-  imports: [PrismaModule, UserModule]
+  imports: [PrismaModule, UserModule],
+  exports: [ReviewService]
 })
 export class ReviewModule {}

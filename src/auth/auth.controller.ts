@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Res, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UserService } from 'src/user/user.service';
 import { LoginDto } from './dto/login.dto';
@@ -8,14 +8,18 @@ import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { AccessTokenGuard } from './guards/access-token.guard';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { UserPayload } from './auth.types';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { multerOptions } from 'src/cloudinary/multer.config';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor (
       private readonly authService: AuthService,
-      private readonly userService: UserService
+      private readonly userService: UserService,
+      private readonly cloudinary: CloudinaryService
   ) {}
 
   @Post('signin')
@@ -29,8 +33,12 @@ export class AuthController {
   }
 
   @Post('signup') 
-  async signUp(@Body() createUserDto: CreateUserDto, @Res({ passthrough: true }) response: Response) {
-      const result = await this.authService.signUp(createUserDto)
+  @UseInterceptors(FileInterceptor('file', multerOptions))
+  @ApiConsumes('multipart/form-data')
+  async signUp(@Body() createUserDto: CreateUserDto, @UploadedFile() file: Express.Multer.File, @Res({ passthrough: true }) response: Response) {
+    createUserDto.file = file
+    
+    const result = await this.authService.signUp(createUserDto)
 
       response.cookie("jwt", result.tokens.accessToken, {httpOnly: true, secure: true})
       response.cookie("jwt-refresh", result.tokens.refreshToken, {httpOnly: true, secure: true})

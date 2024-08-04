@@ -6,6 +6,7 @@ import {PassportModule} from "@nestjs/passport"
 import { UserModule } from 'src/user/user.module';
 import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
+import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
       secret: process.env.JWT_ACCESS_SECRET,
       signOptions: { expiresIn: '1h' },
     }),
+    CloudinaryModule
   ],
   providers: [AuthService, AccessTokenStrategy, RefreshTokenStrategy],
   controllers: [AuthController]

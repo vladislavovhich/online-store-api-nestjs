@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateTypeDto } from './dto/create-type.dto';
+import { UpdateTypeDto } from './dto/update-type.dto';
 
 @Injectable()
 export class TypeService {
@@ -7,8 +9,8 @@ export class TypeService {
     private readonly prisma: PrismaService
   ) {}
 
-  async create(name: string) {
-    await this.prisma.type.create({data: {name}})
+  async create(createTypeDto: CreateTypeDto) {
+    await this.prisma.type.create({data: createTypeDto})
   }
 
   async findAll() {
@@ -21,10 +23,10 @@ export class TypeService {
     })
   }
 
-  async update(id: number, name: string) {
+  async update(id: number, updateTypeDto: UpdateTypeDto) {
     return await this.prisma.type.update({
       where: {id},
-      data: {name}
+      data: updateTypeDto
     })
   }
 

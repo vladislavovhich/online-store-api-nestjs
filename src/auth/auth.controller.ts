@@ -33,12 +33,10 @@ export class AuthController {
   }
 
   @Post('signup') 
-  @UseInterceptors(FileInterceptor('file', multerOptions))
   @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', multerOptions))
   async signUp(@Body() createUserDto: CreateUserDto, @UploadedFile() file: Express.Multer.File, @Res({ passthrough: true }) response: Response) {
-    createUserDto.file = file
-    
-    const result = await this.authService.signUp(createUserDto)
+      const result = await this.authService.signUp(createUserDto, file)
 
       response.cookie("jwt", result.tokens.accessToken, {httpOnly: true, secure: true})
       response.cookie("jwt-refresh", result.tokens.refreshToken, {httpOnly: true, secure: true})

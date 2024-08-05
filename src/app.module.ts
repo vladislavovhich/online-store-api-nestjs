@@ -8,9 +8,11 @@ import { CategoryModule } from './category/category.module';
 import { ProductModule } from './product/product.module';
 import { ReviewModule } from './review/review.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { ImageModule } from './image/image.module';
+import { NestjsFormDataModule } from 'nestjs-form-data';
 
 @Module({
-  imports: [PrismaModule, UserModule, AuthModule, TypeModule, PropertyModule, CategoryModule, ProductModule, ReviewModule, CloudinaryModule],
+  imports: [NestjsFormDataModule, PrismaModule, UserModule, AuthModule, TypeModule, PropertyModule, CategoryModule, ProductModule, ReviewModule, CloudinaryModule, ImageModule],
   controllers: [],
   providers: [],
 })

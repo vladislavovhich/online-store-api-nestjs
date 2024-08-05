@@ -4,6 +4,8 @@ import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { PrismaClientExceptionFilter } from 'nestjs-prisma';
+import * as bodyParser from 'body-parser'
+import { ParseFormDataJsonPipe } from './common/parse-form-data.pipe';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -21,6 +23,8 @@ async function bootstrap() {
 
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ transform: true }))
+  app.use(bodyParser.urlencoded({extended: true}))
+  app.use(bodyParser.json())
 
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));

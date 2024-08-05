@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger"
 import { Type } from "class-transformer"
-import { IsNotEmpty, IsNumber, IsString, Max, Min } from "class-validator"
+import { IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from "class-validator"
 
 export class CreateReviewDto {
     @ApiProperty({
@@ -21,4 +21,8 @@ export class CreateReviewDto {
     @IsNotEmpty()
     @Type(() => Number)
     rating: number
+
+    @ApiProperty({ type: 'string', format: 'binary', required: false, isArray: true })
+    @IsOptional()
+    files?: Express.Multer.File[]
 }

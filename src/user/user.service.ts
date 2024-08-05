@@ -3,35 +3,27 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { ImageService } from 'src/image/image.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly cloudinary: CloudinaryService
+    private readonly imageService: ImageService
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
-    console.log(createUserDto)
-    const imageUploaded = await this.cloudinary.uploadImage(createUserDto.file)
-
-    return await this.prisma.user.create({
-      data: {
-        email: createUserDto.email, 
-        password: createUserDto.password,
-        role: createUserDto.role,
-        name: createUserDto.name,
-        birthDate: createUserDto.birthDate,
-        images: {
-          create: {
-            url: imageUploaded.url
-          }
-        },
-      },
-      include: {
-        images: true
-      }
+  async create(createUserDto: CreateUserDto, file?: Express.Multer.File) {
+    const user = await this.prisma.user.create({
+      data: createUserDto
     })
+
+    if (file) {
+      const image = await this.imageService.upload(user.id, 'User', file)
+
+      return {...user, images: [image], pfp: image}
+    }
+
+    return user
   }
 
   async findAll() {
@@ -43,16 +35,29 @@ export class UserService {
   }
 
   async findOne(id: number) {
-    return await this.prisma.user.findFirstOrThrow({
+    const user = await this.prisma.user.findFirstOrThrow({
       where: {id}
     })
+    const images = await this.imageService.getImages(user.id, 'User')
+
+    return {...user, images, pfp: images.at(-1)}
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
-    return await this.prisma.user.update({
+  async update(id: number, updateUserDto: UpdateUserDto, file?: Express.Multer.File) {
+    const user = await this.prisma.user.update({
       where: {id},
       data: updateUserDto
     })
+
+    const images = await this.imageService.getImages(user.id, 'User')
+
+    if (file) {
+      const image = await this.imageService.upload(user.id, 'User', file)
+
+      return {...user, images: [...images, image], pfp: image}
+    }
+
+    return {...user, images}
   }
 
   async remove(id: number) {

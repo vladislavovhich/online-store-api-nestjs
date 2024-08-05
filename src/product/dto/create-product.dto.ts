@@ -16,6 +16,10 @@ export class ProductPropertyDto {
 }
 
 export class CreateProductDto {
+    @ApiProperty({ type: 'string', format: 'binary', required: false })
+    @IsOptional()
+    file?: Express.Multer.File
+    
     @ApiProperty({description: "Name", required: true, default: "Germinal"})
     @IsString()
     @IsNotEmpty()
@@ -33,9 +37,6 @@ export class CreateProductDto {
     @Type(() => Number)
     categoryId: number
 
-    @IsArray()
-    @ValidateNested({ each: true})
-    @Type(() => ProductPropertyDto)
     @ApiProperty({description: "Product properties", required: true, type: ProductPropertyDto, isArray: true})
     productProperties: ProductPropertyDto[] = []
 }

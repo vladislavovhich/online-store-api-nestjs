@@ -22,7 +22,6 @@ model User {
   name        String 
   birthDate   DateTime
 
-  images Image[] @relation("ImagableLike")
   reviews Review[]
   sellerProducts Product[]
   cartProducts CartProduct[]
@@ -83,7 +82,6 @@ model Product {
 
   properties ProductProperty[]
   reviews Review[]
-  images Image[] @relation("ImagableLike")
 
   category    Category @relation(fields: [categoryId], references: [id])
   categoryId  Int
@@ -127,8 +125,6 @@ model Review {
   product     Product @relation(fields: [productId], references: [id])
   productId   Int
 
-  images Image[] @relation("ImagableLike")
-
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -154,12 +150,8 @@ model Image {
   id Int @id @default(autoincrement())
   url String
 
-  User User? @relation("ImagableLike", fields: [imagableId], references: [id], map: "user_imagableId")
-  Review Review? @relation("ImagableLike", fields: [imagableId], references: [id], map: "review_imagableId")
-  Product Product? @relation("ImagableLike", fields: [imagableId], references: [id], map: "product_imagableId")
-
-  imagableId   Int?
-  imagableType ImagableType?
+  imageableType ImageableType
+  imageableId   Int
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -173,7 +165,7 @@ enum Role {
   SELLER
 }
 
-enum ImagableType {
+enum ImageableType {
   User
   Product
   Review

@@ -5,13 +5,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CategoryService } from 'src/category/category.service';
 import { Review } from '@prisma/client';
 import { ReviewService } from 'src/review/review.service';
+import { ImageService } from 'src/image/image.service';
 
 @Injectable()
 export class ProductService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly categoryService: CategoryService,
-    private readonly reviewService: ReviewService
+    private readonly imageService: ImageService
   ) {}
 
   async checkProperties(categoryId: number, properties: ProductPropertyDto[], allowedEmpty: boolean = false) {
@@ -66,10 +67,10 @@ export class ProductService {
     }
   }
   
-  async create(createProductDto: CreateProductDto, userId: number) {
+  async create(createProductDto: CreateProductDto, userId: number, file: Express.Multer.File) {
     await this.checkProperties(createProductDto.categoryId, createProductDto.productProperties)
 
-    return await this.prisma.product.create({
+    const product = await this.prisma.product.create({
       data: {
         name: createProductDto.name,
         price: createProductDto.price,
@@ -94,6 +95,14 @@ export class ProductService {
         }
       }
     })
+
+    if (file) {
+      const image = await this.imageService.upload(product.id, 'Product', file)
+
+      return {...product, cover: image}
+    }
+
+    return product
   }
 
   calculateAverageRating(reviews: Review[]) {
@@ -110,8 +119,16 @@ export class ProductService {
         reviews: true
       }
     })
+    const productsWithImages = []
 
-    return products.map(product => ({...product, averageRating: this.calculateAverageRating(product.reviews)}))
+    for (let i = 0; i < products.length; i++) {
+      const image = await this.imageService.getImages(products[i].id, 'Product')
+      const averageRating = this.calculateAverageRating(products[i].reviews)
+
+      productsWithImages.push({...products[i], cover: image, averageRating})
+    }
+
+    return {products: productsWithImages}
   }
 
   async findOne(id: number) {
@@ -129,13 +146,15 @@ export class ProductService {
       }
     })
 
-    return {...product, averageRating: this.calculateAverageRating(product.reviews)}
+    const images = await this.imageService.getImages(id, 'Product')
+
+    return {...product, averageRating: this.calculateAverageRating(product.reviews), cover: images.at(-1)}
   }
 
-  async update(id: number, updateProductDto: UpdateProductDto) {
+  async update(id: number, updateProductDto: UpdateProductDto, file: Express.Multer.File) {
     await this.checkProperties(updateProductDto.categoryId, updateProductDto.productProperties, true)
 
-    return await this.prisma.product.update({
+    const product = await this.prisma.product.update({
       where: {id},
       data: {
         name: updateProductDto.name,
@@ -157,6 +176,14 @@ export class ProductService {
         }
       }
     })
+
+    if (file) {
+      const image = await this.imageService.upload(product.id, 'Product', file)
+
+      return {...product, cover: image}
+    }
+
+    return product
   }
 
   async remove(id: number) {

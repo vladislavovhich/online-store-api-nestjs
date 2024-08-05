@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, BadRequestException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, BadRequestException, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { GetUser } from 'src/common/decorators/extract-user.decorator';
 import { UserPayload } from 'src/auth/auth.types';
 import { AccessTokenGuard } from 'src/auth/guards/access-token.guard';
@@ -11,6 +11,10 @@ import { RolesGuard } from 'src/common/guards/check-role.guard';
 import { Roles } from 'src/common/decorators/check-role.decorator';
 import { OwnershipGuard } from 'src/common/guards/check-ownership.guard';
 import { CheckOwnership } from 'src/common/decorators/check-ownership.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { multerOptions } from 'src/cloudinary/multer.config';
+import { FormDataRequest } from 'nestjs-form-data';
+import { ParseFormDataJsonPipe } from 'src/common/parse-form-data.pipe';
 
 @ApiTags('Product')
 @Controller('products')
@@ -21,9 +25,14 @@ export class ProductController {
   @Roles(UserRoles.ADMIN, UserRoles.SELLER)   
   @UseGuards(RolesGuard)
   @UseGuards(AccessTokenGuard)
-  @Post()
-  create(@Body() createProductDto: CreateProductDto, @GetUser() user: UserPayload) {
-    return this.productService.create(createProductDto, user.userId);
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', multerOptions))
+  create(@Body(
+    new ParseFormDataJsonPipe({except: ['file']})) createProductDto: CreateProductDto, 
+    @GetUser() user: UserPayload, 
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    return this.productService.create(createProductDto, user.userId, file);
   }
 
   @Get()
@@ -42,8 +51,14 @@ export class ProductController {
   @CheckOwnership('product', 'sellerId')
   @UseGuards(OwnershipGuard)
   @UseGuards(AccessTokenGuard)
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productService.update(+id, updateProductDto);
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', multerOptions))
+  update(
+    @Param('id') id: string, 
+    @Body(new ParseFormDataJsonPipe({except: ['file']})) updateProductDto: UpdateProductDto, 
+    @UploadedFile() file: Express.Multer.File
+  ) { 
+    return this.productService.update(+id, updateProductDto, file);
   }
 
   @Delete(':id')

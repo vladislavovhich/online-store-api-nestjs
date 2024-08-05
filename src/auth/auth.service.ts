@@ -14,7 +14,7 @@ export class AuthService {
         private readonly userService: UserService
     ) {}
 
-    async signUp(createUserDto: CreateUserDto) {
+    async signUp(createUserDto: CreateUserDto, file?: Express.Multer.File) {
        const isExist = await this.userService.findByEmail(createUserDto.email)
 
        if (isExist) {
@@ -22,7 +22,7 @@ export class AuthService {
        }
        
        const password = await bcrypt.hash(createUserDto.password, 10)
-       const newUser = await this.userService.create({...createUserDto, password})
+       const newUser = await this.userService.create({...createUserDto, password}, file)
        const tokens = this.createTokens(newUser.id)
 
        await this.updateToken(newUser.id, tokens.refreshToken)

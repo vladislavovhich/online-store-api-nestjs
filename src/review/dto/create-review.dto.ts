@@ -12,7 +12,6 @@ export class CreateReviewDto {
     text: string
 
     @ApiProperty({
-        example: "review text",
         required: true
     })
     @IsNumber()

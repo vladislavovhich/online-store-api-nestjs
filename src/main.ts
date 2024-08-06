@@ -5,7 +5,7 @@ import * as cookieParser from 'cookie-parser'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { PrismaClientExceptionFilter } from 'nestjs-prisma';
 import * as bodyParser from 'body-parser'
-import { ParseFormDataJsonPipe } from './common/parse-form-data.pipe';
+import { ParseFormDataJsonPipe } from './common/pipes/parse-form-data.pipe';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

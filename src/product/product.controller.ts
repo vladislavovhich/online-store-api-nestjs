@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, BadRequestException, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, BadRequestException, UseGuards, UseInterceptors, UploadedFile, Query } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -14,7 +14,9 @@ import { CheckOwnership } from 'src/common/decorators/check-ownership.decorator'
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from 'src/cloudinary/multer.config';
 import { FormDataRequest } from 'nestjs-form-data';
-import { ParseFormDataJsonPipe } from 'src/common/parse-form-data.pipe';
+import { ParseFormDataJsonPipe } from 'src/common/pipes/parse-form-data.pipe';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { GetAllProductsDto } from './dto/get-all-products.dto';
 
 @ApiTags('Product')
 @Controller('products')
@@ -25,19 +27,32 @@ export class ProductController {
   @Roles(UserRoles.ADMIN, UserRoles.SELLER)   
   @UseGuards(RolesGuard)
   @UseGuards(AccessTokenGuard)
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file', multerOptions))
-  create(@Body(
-    new ParseFormDataJsonPipe({except: ['file']})) createProductDto: CreateProductDto, 
-    @GetUser() user: UserPayload, 
-    @UploadedFile() file: Express.Multer.File
-  ) {
-    return this.productService.create(createProductDto, user.userId, file);
+  create(@Body() createProductDto: CreateProductDto, @GetUser() user: UserPayload) {
+    return this.productService.create(createProductDto, user.userId);
   }
 
   @Get()
-  findAll() {
-    return this.productService.findAll();
+  findAll(@Query() getProductsDto: GetAllProductsDto) {
+    return this.productService.findAll(getProductsDto)
+  }
+
+  @Patch(':id/upload-cover')
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    required: true,
+    schema: {
+      type: "object",
+      properties: {
+        file: {
+          type: "string",
+          format: "binary",
+        }
+      }
+    }
+  })
+  @UseInterceptors(FileInterceptor('file', multerOptions))
+  uploadCover(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+    return this.productService.uploadCover(+id, file)
   }
 
   @Get(':id')
@@ -51,14 +66,8 @@ export class ProductController {
   @CheckOwnership('product', 'sellerId')
   @UseGuards(OwnershipGuard)
   @UseGuards(AccessTokenGuard)
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file', multerOptions))
-  update(
-    @Param('id') id: string, 
-    @Body(new ParseFormDataJsonPipe({except: ['file']})) updateProductDto: UpdateProductDto, 
-    @UploadedFile() file: Express.Multer.File
-  ) { 
-    return this.productService.update(+id, updateProductDto, file);
+  update(@Param('id') id: string, @Body(new ParseFormDataJsonPipe({except: ['file']})) updateProductDto: UpdateProductDto) { 
+    return this.productService.update(+id, updateProductDto);
   }
 
   @Delete(':id')

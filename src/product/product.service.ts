@@ -6,6 +6,9 @@ import { CategoryService } from 'src/category/category.service';
 import { Review } from '@prisma/client';
 import { ReviewService } from 'src/review/review.service';
 import { ImageService } from 'src/image/image.service';
+import { GetAllProductsDto } from './dto/get-all-products.dto';
+import { handleQueryParams } from 'src/common/helpers/filtering-params.helper';
+import { AllProductsType } from './dto/product.types';
 
 @Injectable()
 export class ProductService {
@@ -67,7 +70,7 @@ export class ProductService {
     }
   }
   
-  async create(createProductDto: CreateProductDto, userId: number, file: Express.Multer.File) {
+  async create(createProductDto: CreateProductDto, userId: number) {
     await this.checkProperties(createProductDto.categoryId, createProductDto.productProperties)
 
     const product = await this.prisma.product.create({
@@ -96,39 +99,57 @@ export class ProductService {
       }
     })
 
-    if (file) {
-      const image = await this.imageService.upload(product.id, 'Product', file)
-
-      return {...product, cover: image}
-    }
-
     return product
   }
 
   calculateAverageRating(reviews: Review[]) {
+    if (!reviews || !reviews.length) {
+      return 0
+    }
+
     const rating = reviews.reduce((val, prev) => prev.rating + val, 0) / reviews.length
 
     return +rating.toFixed(2)
   }
 
-  async findAll() {
-    const products = await this.prisma.product.findMany({
+  async findAll(getProductsDto: GetAllProductsDto) {
+    const {page, pageSize} = getProductsDto
+    const orderByProps = handleQueryParams(getProductsDto, 'Order')
+    const offset = (page - 1) * pageSize
+    const count = await this.prisma.product.count()
+    const hasNextPage = count - page * pageSize > 0
+    const hasPrevPage = page > 1 && count - (page - 1) * pageSize > 0
+
+    const productsAll = await this.prisma.product.findMany({
+      skip: offset,
+      take: pageSize,
       include: {
-        seller: true,
-        category: true,
         reviews: true
-      }
+      },
+      orderBy: orderByProps,
+      where: {categoryId: getProductsDto.categoryId}
     })
-    const productsWithImages = []
 
-    for (let i = 0; i < products.length; i++) {
-      const image = await this.imageService.getImages(products[i].id, 'Product')
-      const averageRating = this.calculateAverageRating(products[i].reviews)
+    const products = []
 
-      productsWithImages.push({...products[i], cover: image, averageRating})
+    for (let product of productsAll) {
+      const averageRating = this.calculateAverageRating(product.reviews)
+      const images = await this.imageService.getImages(product.id, 'Product')
+      
+      products.push({...product, cover: images.length ? images.at(-1) : null, averageRating})
     }
 
-    return {products: productsWithImages}
+    const result: AllProductsType = {products}
+
+    if (hasNextPage) {
+      result.nextPage = page + 1
+    }
+
+    if (hasPrevPage) {
+      result.prevPage = page - 1
+    }
+
+    return result
   }
 
   async findOne(id: number) {
@@ -150,8 +171,15 @@ export class ProductService {
 
     return {...product, averageRating: this.calculateAverageRating(product.reviews), cover: images.at(-1)}
   }
+  
+  async uploadCover(id: number, file: Express.Multer.File) {
+    const product = await this.findOne(id)
+    const image = await this.imageService.upload(id, 'Product', file)
 
-  async update(id: number, updateProductDto: UpdateProductDto, file: Express.Multer.File) {
+    return {...product, cover: image}
+  }
+
+  async update(id: number, updateProductDto: UpdateProductDto) {
     await this.checkProperties(updateProductDto.categoryId, updateProductDto.productProperties, true)
 
     const product = await this.prisma.product.update({
@@ -176,12 +204,6 @@ export class ProductService {
         }
       }
     })
-
-    if (file) {
-      const image = await this.imageService.upload(product.id, 'Product', file)
-
-      return {...product, cover: image}
-    }
 
     return product
   }
